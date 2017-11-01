@@ -8,7 +8,7 @@
 #include <unistd.h>
 int main(int argc, char const *argv[])
 {
-	int port = atoi(argv [1]);
+	int port = 8888;
     int server_fd, new_socket, valread;
     struct sockaddr_in address;
     int opt = 1;
@@ -30,6 +30,7 @@ int main(int argc, char const *argv[])
         perror("setsockopt");
         exit(EXIT_FAILURE);
     }
+
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = INADDR_ANY;
     address.sin_port = htons( port );
@@ -41,6 +42,7 @@ int main(int argc, char const *argv[])
         perror("bind failed");
         exit(EXIT_FAILURE);
     }
+    printf("Listening\n");
     if (listen(server_fd, 3) < 0)
     {
         perror("listen");
@@ -52,8 +54,8 @@ int main(int argc, char const *argv[])
         perror("accept");
         exit(EXIT_FAILURE);
     }
-    valread = read( new_socket , buffer, 1024);
-    printf("%s\n",buffer );
+    //valread = read( new_socket , buffer, 1024);
+    printf("Port %d\n",address.sin_port );
     send(new_socket , hello , strlen(hello) , 0 );
     printf("Hello message sent\n");
     return 0;

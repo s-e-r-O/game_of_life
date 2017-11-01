@@ -49,3 +49,5 @@ for i in `seq 1 $(($dim * $dim))`
 do
 	./slave -i $i -d $dim -p $(($portnum + $i)) &
 done
+
+read -n 1 -s

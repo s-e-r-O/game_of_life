@@ -1,9 +1,9 @@
-IDIR=./include
+IDIR=./inc
 CC=gcc
 CFLAGS=-I$(IDIR)
 
-SRC_M = src/master.c
-SRC_S = src/slave.c
+SRC_M = src/master/*.c
+SRC_S = src/slave/*.c
 
 all: master slave
 
@@ -15,3 +15,4 @@ slave: $(SRC_S)
 
 clean:
 	rm -f master *~ *.o
+	rm -f slvae *~ *.o 
