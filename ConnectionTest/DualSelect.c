@@ -20,7 +20,8 @@
 int main(int argc , char *argv[])
 {
     int opt = TRUE;
-    int master_socket,master_socket6 , addrlen,addrlen6 , new_socket , client_socket[30] , max_clients = 30 , activity,valread ,activity6,valread6 , sd;
+    int master_socket,master_socket6 , 
+    addrlen,addrlen6 , new_socket , client_socket[30] , max_clients = 30 , activity,valread ,activity6,valread6 , sd;
     int max_sd;
     struct sockaddr_in address;
     struct sockaddr_in6 address6;
@@ -47,29 +48,44 @@ int main(int argc , char *argv[])
     }
   
     //set master socket to allow multiple connections , this is just a good habit, it will work without this
-    if( setsockopt(master_socket, SOL_SOCKET, SO_REUSEADDR, (char *)&opt, sizeof(opt)) < 0 || setsockopt(master_socket6, SOL_SOCKET, SO_REUSEADDR, (char *)&opt, sizeof(opt)) < 0 )
+    if( setsockopt(master_socket, SOL_SOCKET, SO_REUSEADDR, (char *)&opt, sizeof(opt)) < 0 || 
+    	setsockopt(master_socket6, SOL_SOCKET, SO_REUSEADDR, (char *)&opt, sizeof(opt)) < 0 )
     {
         perror("setsockopt");
         exit(EXIT_FAILURE);
-    }
+    };
   
     //type of socket created
     address.sin_family = AF_INET; //AF_INET6 for ipv6
-    address.sin_addr.s_addr = INADDR_ANY;
+    //address.sin_addr.s_addr = //INADDR_ANY;
     address.sin_port = htons( PORT );
+    if(inet_pton(AF_INET, "127.0.0.1", &(address.sin_addr))<=0) {
+        perror("inet_pton failed");
+        exit(EXIT_FAILURE);
+    }
     //Socket6Creation
     //type of socket created
     address6.sin6_family = AF_INET6; //AF_INET6 for ipv6
     address6.sin6_addr = in6addr_any;
-    address6.sin6_port = htons( 8889 );
-      
+    address6.sin6_port = htons( PORT );
+      if(inet_pton(AF_INET6, "::1", &(address6.sin6_addr))<=0) {
+        perror("inet_pton6 failed");
+        exit(EXIT_FAILURE);
+    }  
     //bind the socket to localhost port 
-    if (bind(master_socket, (struct sockaddr *)&address, sizeof(address))>=0 && bind(master_socket6, (struct sockaddr *)&address6, sizeof(address6))>=0) 
+    if (bind(master_socket, (struct sockaddr *)&address, sizeof(address))<0)
     {
-        printf("binded both ports\n");
-        //exit(EXIT_FAILURE);
+        printf("bind ipv4 ports\n");
+        exit(EXIT_FAILURE);
     }
-    printf("Listener on port %d \n", PORT);
+    printf("binded ipv4\n");
+    //printf("Listener on port %d \n", PORT);
+
+    if ( bind(master_socket6, (struct sockaddr *)&address6, sizeof(address6))<0){
+    	printf("bind ipv6 ports\n");
+    	exit(EXIT_FAILURE);
+    } 
+    printf("binded ipv6\n");
      
     //try to specify maximum of 100 pending connections for the master socket
     if (listen(master_socket, 3) < 0 || listen(master_socket6, 3) < 0)

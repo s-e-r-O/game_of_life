@@ -30,13 +30,14 @@ int main(int argc, char **argv)
 	WINDOW *info = newwin(1, COLS, 0, 0);
 	
 	while (1){
+		wclear(board);
+		wclear(info);
+		
 		wprintw(info, "Generation: %d", generation);
 		array_state_reset(dim*dim, slaves_state);
 		
 		wait_for_slaves(server_fd, dim, slaves_state);
 
-		wclear(board);
-		wclear(info);
     	box(board, 0, 0);
 		
 		for (int i = 0; i < dim; i++){

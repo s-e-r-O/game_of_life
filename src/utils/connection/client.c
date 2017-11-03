@@ -43,6 +43,7 @@ int connect_to_servers(int init_portnum, int n_needed, int n_neighbours, int nei
 
             int neighbour_port = init_portnum + neighbours[i];
             serv_addr.sin_port = htons(neighbour_port);
+            
             printf("%02d: Trying to connect to %02d in port %d\n", id, neighbours[i], neighbour_port);
             
             if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
