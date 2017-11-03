@@ -9,9 +9,7 @@
 #include "server.h"
 #include "client.h"
 #include "slave_init.h"
-
-#define SERVER 0
-#define CLIENT 1
+#include "utils.h"
 
 void
 usage(char *name)
@@ -67,115 +65,68 @@ main(int argc, char **argv)
 
  	// Initialization of slave
 
-	int neighbours_port[MAX_NEIGHBOURS];	
-	int n_neighbours = find_neighbour_ports(id, dim, portnum, neighbours_port);
-	
-	int initial_type = find_initial_type(id, dim);
+	int neighbours[MAX_NEIGHBOURS];
+
+	int n_neighbours = find_neighbours(id, dim, neighbours);
+	int neighbours_state[n_neighbours];
+	neighbours_state_init(n_neighbours, neighbours_state);
+
+	int type = find_slave_type(id, dim);
 
 	int server_fd;
+	int init_portnum;
+	int state = DEAD;
 
-	int i;
-
-	switch(initial_type){
-		case SERVER:
-			//printf("Proceso esclavo %02d ejecutandose en una matriz %dx%d, escuchando el puerto %d como Server\n", id, dim, dim, portnum);
-			// -------- INITIALIZATION
+	// SEND STATE TO MASTER!!
+	//FOR LOOP THIS 	|
+	//					V
+	switch(type){
+		case ONLY_SERVER:;
+			server_fd = server_init(portnum);
+			wait_for_clients(server_fd, n_neighbours, n_neighbours, neighbours, neighbours_state, id, DEAD);
 			
-			server_fd = server(portnum);
-			
-			// -------------
-			// ----------- LISTEN
-			int new_socket;
-    		struct sockaddr_in address;
-    		int addrlen = sizeof(address);
-
-    		int n_clients;
-    		switch(n_neighbours){
-    			case 3:
-    				n_clients = 2;
-    			break;
-    			case 5:
-    				n_clients = 3;
-    			break;
-    			case 8:
-    				n_clients = 4;
-    			break;
-    		}
-
-			printf("%02d: Listening...\n", id);
-			
-			listen(server_fd, 3);
-			// ---------
-			for (i = 0; i < n_clients; i++){
-				new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t*)&addrlen);
-				int peer_id;
-				read(new_socket, &peer_id, 4);
-				printf("%02d: Connected to %02d (Port: %d)...\n", id, peer_id, address.sin_port);
-			}
-			
-			if ((id - 1) / dim % 2 == 0) { // even row (counting from 0)
-				printf("%02d: Switching to client\n", id);
-			} else {
-				for (i = n_clients; i < n_neighbours; i++){
-					new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t*)&addrlen);
-					int peer_id;
-					read(new_socket, &peer_id, 4);
-					printf("%02d: Connected to %02d (Port: %d)...\n", id, peer_id, address.sin_port);
-				}	
-			}
 		break;
-		case CLIENT:
-			sleep (1); //waiting for all servers to be initialized
 		
-			int n_servers;
-		
-    		switch(n_neighbours){
-    			case 5:
-    				n_servers = 3;
-    			break;
-    			case 8:
-    				n_servers = 4;
-    			break;
-    		}
-				
-			for (i = 0; i < n_neighbours; i++){
-				printf("%02d: Trying to connect to %02d...", id, neighbours_port[i] - (portnum - id));
-				//int n_failed = 0;
-				int sock = client(neighbours_port[i]);
-				//while ((sock = client(neighbours_port[i])) < 0 || n_failed > 1){
-				//	n_failed ++;
-				//}
-				if (sock < 0){
-					printf("failed\n");
-					continue;
-				}
-				send(sock, &id, sizeof(id), 0);
-				printf("Success!\n");	
-			}
+		case ONLY_CLIENT:;
+			init_portnum = portnum - id;
+			connect_to_servers(init_portnum, n_neighbours, n_neighbours, neighbours, neighbours_state, id, ALIVE);
+		break;
+		case SERVER_CLIENT:;
+			server_fd = server_init(portnum);
+			wait_for_clients(server_fd, (n_neighbours + 1) / 2, n_neighbours, neighbours, neighbours_state, id, DEAD);
 
-			if ((id - 1) / dim % 2 == 0) { // even row (counting from 0)
-				printf("%02d: Switching to server\n", id);
-			} else {
-				/*sleep(1);
-				for (i = n_servers; i < n_neighbours; i++){
-					printf("%02d: Trying to connect to %02d...", id, neighbours_port[i] - (portnum - id));
-					//int n_failed = 0;
-					int sock = client(neighbours_port[i]);
-					//while ((sock = client(neighbours_port[i])) < 0 || n_failed > 1){
-					//	n_failed ++;
-					//}
-					if (sock < 0){
-						printf("failed\n");
-						continue;
-					}
-					send(sock, &id, sizeof(id), 0);
-					printf("Success!\n");	
-				}*/	
-			}
-			//printf("Proceso esclavo %02d ejecutandose en una matriz %dx%d, escuchando el puerto %d como Client\n", id, dim, dim, portnum);
-			//client(n_neighbours, neighbours_port);
+			init_portnum = portnum - id;
+			connect_to_servers(init_portnum, n_neighbours - (n_neighbours + 1) / 2, n_neighbours, neighbours, neighbours_state, id, DEAD);
+		break;
+		case CLIENT_SERVER:;
+			init_portnum = portnum - id;
+			connect_to_servers(init_portnum, (n_neighbours + 1) / 2, n_neighbours, neighbours, neighbours_state, id, ALIVE);
+
+			server_fd = server_init(portnum);
+			wait_for_clients(server_fd, n_neighbours - (n_neighbours + 1) / 2, n_neighbours, neighbours, neighbours_state, id, ALIVE);
 		break;
 	}
-
+	int alive = 0;
+	int dead = 0;
+	for (int i = 0; i < n_neighbours; i++){
+		switch (neighbours_state[i]){
+			case ALIVE:
+				alive++;
+				break;
+			case DEAD:
+				dead++;
+				break;
+		}
+	}
+	if (alive + dead == n_neighbours){
+		//printf("%02d: All complete!\n", id);
+		if (state == DEAD && alive == 3){
+			state = ALIVE;
+		} else if (state == ALIVE && !(alive >= 2 && alive <= 3)) {
+			state = DEAD;
+		}
+	}
+	//END LOOP THIS		^
+	//					|
 	exit(EXIT_SUCCESS);
 }

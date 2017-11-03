@@ -8,8 +8,9 @@
 #include <unistd.h>
 
 #include "server.h"
+#include "utils.h"
 
-int server(int portnum)
+int server_init(int portnum)
 {
     int server_fd;
     struct sockaddr_in address;
@@ -38,4 +39,34 @@ int server(int portnum)
     }
 
     return server_fd;
+}
+
+int wait_for_clients(int server_fd, int n_needed, int n_neighbours, int neighbours[], int neighbours_state[], int id, int state){
+    
+    int new_socket;
+    struct sockaddr_in address;
+    int addrlen = sizeof(address);
+    printf("%02d: Listening\n", id);
+    listen(server_fd, n_neighbours);
+
+    for (int i = 0; i < n_needed; i++){
+        new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t*)&addrlen);
+        int peer_id;
+        struct state_msg state_message;
+        read(new_socket, &state_message, sizeof(state_message));
+        if (id == 0) printf("%02d: Connected to %02d\n", id, state_message.id);
+        if (id == 0) printf("%02d: Received %d from %02d\n", id, state_message.state, state_message.id);
+        for (int j = 0; j < n_neighbours; j++){
+            if (neighbours[j] == state_message.id){
+                neighbours_state[j] = state_message.state;
+                break;
+            }
+        }
+        state_message.id = id;
+        state_message.state = state;
+
+        send(new_socket, &state_message, sizeof(state_message), 0);
+        //printf("Connected to %d! my n_neighbours is %d\n", state_message.id, n_neighbours);
+        //printf("%02d: Connected to %02d (Port: %d)...\n", id, peer_id, address.sin_port);
+    }
 }
