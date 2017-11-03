@@ -41,7 +41,7 @@ fi
 echo "Starting Game of Life Simulation"
 echo
 echo "Starting master: "
-./master -p $portnum &
+x-terminal-emulator -e ./master -d $dim -p $portnum 
 
 echo
 echo "Starting slaves: "
