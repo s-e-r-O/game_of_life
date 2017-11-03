@@ -20,9 +20,10 @@
 int main(int argc , char *argv[])
 {
     int opt = TRUE;
-    int master_socket , addrlen , new_socket , client_socket[30] , max_clients = 30 , activity,valread , sd;
+    int master_socket,master_socket6 , addrlen,addrlen6 , new_socket , client_socket[30] , max_clients = 30 , activity,valread ,activity6,valread6 , sd;
     int max_sd;
-    struct sockaddr_in6 address;
+    struct sockaddr_in address;
+    struct sockaddr_in6 address6;
       
     char buffer[1025];  //data buffer of 1K
       
@@ -39,34 +40,39 @@ int main(int argc , char *argv[])
     }
       
     //create a master socket
-    if( (master_socket = socket(AF_INET6 , SOCK_STREAM , 0)) == 0) 
+    if( (master_socket = socket(AF_INET , SOCK_STREAM , 0)) == 0 || (master_socket6 = socket(AF_INET6 , SOCK_STREAM , 0)) == 0 ) 
     {
         perror("socket failed");
         exit(EXIT_FAILURE);
     }
   
     //set master socket to allow multiple connections , this is just a good habit, it will work without this
-    if( setsockopt(master_socket, SOL_SOCKET, SO_REUSEADDR, (char *)&opt, sizeof(opt)) < 0 )
+    if( setsockopt(master_socket, SOL_SOCKET, SO_REUSEADDR, (char *)&opt, sizeof(opt)) < 0 || setsockopt(master_socket6, SOL_SOCKET, SO_REUSEADDR, (char *)&opt, sizeof(opt)) < 0 )
     {
         perror("setsockopt");
         exit(EXIT_FAILURE);
     }
   
     //type of socket created
-    address.sin6_family = AF_INET6; //AF_INET6 for ipv6
-    address.sin6_addr = in6addr_any;
-    address.sin6_port = htons( PORT );
+    address.sin_family = AF_INET; //AF_INET6 for ipv6
+    address.sin_addr.s_addr = INADDR_ANY;
+    address.sin_port = htons( PORT );
+    //Socket6Creation
+    //type of socket created
+    address6.sin6_family = AF_INET6; //AF_INET6 for ipv6
+    address6.sin6_addr = in6addr_any;
+    address6.sin6_port = htons( 8889 );
       
     //bind the socket to localhost port 
-    if (bind(master_socket, (struct sockaddr *)&address, sizeof(address))<0) 
+    if (bind(master_socket, (struct sockaddr *)&address, sizeof(address))>=0 && bind(master_socket6, (struct sockaddr *)&address6, sizeof(address6))>=0) 
     {
-        perror("bind failed");
-        exit(EXIT_FAILURE);
+        printf("binded both ports\n");
+        //exit(EXIT_FAILURE);
     }
     printf("Listener on port %d \n", PORT);
      
     //try to specify maximum of 100 pending connections for the master socket
-    if (listen(master_socket, 100) < 0)
+    if (listen(master_socket, 3) < 0 || listen(master_socket6, 3) < 0)
     {
         perror("listen");
         exit(EXIT_FAILURE);
@@ -74,16 +80,18 @@ int main(int argc , char *argv[])
       
     //accept the incoming connection
     addrlen = sizeof(address);
-    fprintf(stderr,"Waiting for connections ...");
+    addrlen6 = sizeof(address6);
+    printf("Waiting for connections ...\n");
      
     while(TRUE) 
     {
         //clear the socket set
         FD_ZERO(&readfds);
   
-        //add master socket to set
+        //add masters socket to set
         FD_SET(master_socket, &readfds);
-        max_sd = master_socket;
+        FD_SET(master_socket6, &readfds);
+        max_sd = master_socket6;
          
         //add child sockets to set
         for (int i = 0 ; i < max_clients ; i++) 
@@ -102,12 +110,13 @@ int main(int argc , char *argv[])
   
         //wait for an activity on one of the sockets , timeout is NULL , so wait indefinitely
         activity = select( max_sd + 1 , &readfds , NULL , NULL , NULL);
-    
+        //activity6 = select( max_sd + 1 , &readfds , NULL , NULL , NULL);
         if ((activity < 0) && (errno!=EINTR)) 
         {
             printf("select error");
         }
           
+        //If something happened on the master socket , then its an incoming connection
         if (FD_ISSET(master_socket, &readfds)) 
         {
             if ((new_socket = accept(master_socket, (struct sockaddr *)&address, (socklen_t*)&addrlen))<0)
@@ -117,9 +126,7 @@ int main(int argc , char *argv[])
             }
           
             //inform user of socket number - used in send and receive commands
-            char straddr[INET6_ADDRSTRLEN];
-            inet_ntop(AF_INET6, &address.sin6_addr, straddr, sizeof(straddr));
-            printf("New connection , socket fd is %d , ip is : %s , port : %d \n" , new_socket , straddr , ntohs(address.sin6_port));
+            printf("New connection , socket fd is %d , ip is : %s , port : %d \n" , new_socket , inet_ntoa(address.sin_addr) , ntohs(address.sin_port));
         
             //send new connection greeting message
             if( send(new_socket, message, strlen(message), 0) != strlen(message) ) 
@@ -127,7 +134,45 @@ int main(int argc , char *argv[])
                 perror("send");
             }
               
-            printf("Welcome message sent successfully");
+            printf("Welcome message sent successfully\n");
+              
+            //add new socket to array of sockets
+            for (int i = 0; i < max_clients; i++) 
+            {
+                //if position is empty
+                if( client_socket[i] == 0 )
+                {
+                    client_socket[i] = new_socket;
+                    printf("Adding to list of sockets as %d\n" , i);
+                     
+                    break;
+                }
+            }
+          
+            //inform user of socket number - used in send and receive command
+            
+        }
+
+        if (FD_ISSET(master_socket6, &readfds)) 
+        {
+            if ((new_socket = accept(master_socket6, (struct sockaddr *)&address6, (socklen_t*)&addrlen6))<0)
+            {
+                perror("accept");
+                exit(EXIT_FAILURE);
+            }
+          
+            //inform user of socket number - used in send and receive commands
+            char straddr[INET6_ADDRSTRLEN];
+            inet_ntop(AF_INET6, &address6.sin6_addr, straddr, sizeof(straddr));
+            printf("New connection , socket fd is %d , ip is : %s , port : %d \n" , new_socket , straddr , ntohs(address6.sin6_port));
+        
+            //send new connection greeting message
+            if( send(new_socket, message, strlen(message), 0) != strlen(message) ) 
+            {
+                perror("send");
+            }
+              
+            printf("Welcome message sent successfully\n");
               
             //add new socket to array of sockets
             for (int i = 0; i < max_clients; i++) 
@@ -155,9 +200,7 @@ int main(int argc , char *argv[])
                 {
                     //Somebody disconnected , get his details and print
                     getpeername(sd , (struct sockaddr*)&address , (socklen_t*)&addrlen);
-                    char straddr[INET6_ADDRSTRLEN];
-                    inet_ntop(AF_INET6, &address.sin6_addr, straddr, sizeof(straddr));
-                    printf("Host disconnected , ip %s , port %d \n" , straddr , ntohs(address.sin6_port));
+                    printf("Host disconnected , ip %s , port %d \n" , inet_ntoa(address.sin_addr) , ntohs(address.sin_port));
                       
                     //Close the socket and mark as 0 in list for reuse
                     close( sd );
