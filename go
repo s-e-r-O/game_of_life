@@ -49,7 +49,7 @@ echo "Starting Game of Life Simulation"
 echo
 echo "Starting master..."
 
-x-terminal-emulator --hide-menubar -t MASTER -e "./exec/master -d $dim -p $portnum"
+x-terminal-emulator --hide-menubar -t MASTER -e "./bin/master -d $dim -p $portnum"
 
 echo "Starting slaves..."
 
@@ -59,9 +59,9 @@ for i in `seq 1 $(($dim * $dim))`
 do
   if $log
   then
-	 ./exec/slave -i $i -d $dim -p $(($portnum + $i)) &
+	 ./bin/slave -i $i -d $dim -p $(($portnum + $i)) &
   else
-   ./exec/slave -i $i -d $dim -p $(($portnum + $i)) > /dev/null & 
+   ./bin/slave -i $i -d $dim -p $(($portnum + $i)) > /dev/null & 
   fi
 done
  

@@ -1,7 +1,0 @@
-#!/bin/sh
-
-echo "Starting slaves: "
-for i in `seq 1 $(($1 * $1))` 
-do
-  ./slave -i $i -d $1 -p $(($2 + $i)) &
-done
