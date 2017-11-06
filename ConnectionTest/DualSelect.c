@@ -66,7 +66,7 @@ int main(int argc , char *argv[])
     //Socket6Creation
     //type of socket created
     address6.sin6_family = AF_INET6; //AF_INET6 for ipv6
-    address6.sin6_addr = in6addr_any;
+    //address6.sin6_addr = in6addr_any;
     address6.sin6_port = htons( PORT );
       if(inet_pton(AF_INET6, "::1", &(address6.sin6_addr))<=0) {
         perror("inet_pton6 failed");
