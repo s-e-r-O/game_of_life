@@ -44,13 +44,14 @@ else
 fi
 
 #clear
+
 echo "Starting Game of Life Simulation"
 echo
-echo "Starting master: "
+echo "Starting master..."
+
 x-terminal-emulator --hide-menubar -t MASTER -e "./exec/master -d $dim -p $portnum"
 
-echo
-echo "Starting slaves: "
+echo "Starting slaves..."
 
 echo "Press any key to stop..."
 
@@ -63,7 +64,6 @@ do
    ./exec/slave -i $i -d $dim -p $(($portnum + $i)) > /dev/null & 
   fi
 done
-
  
 read -n 1 -s
 

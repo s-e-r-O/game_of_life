@@ -5,7 +5,6 @@
 
 #include "connection.h"
 
-/* WE DEFINETLY HAVE TO CHANGE THIS TO IMPLEMENT IPv4 AND IPv6 */
 int address4_init(struct sockaddr_in *address){
     address->sin_family = AF_INET;
     
@@ -52,17 +51,20 @@ int connect_to_servers(int init_portnum, int n_needed, int n_neighbours, int nei
             if (neighbours_state[i] != NOT_SET){
                 continue;
             }
+
             int neighbour_port = init_portnum + neighbours[i];
 
+            /* We store the socket in which me made a connection (IPv4 or IPv6)*/
             int connected_socket;
 
+            /* Let's try first with IPv6 */
             int sock6 = socket(AF_INET6, SOCK_STREAM, 0);
             serv_addr6.sin6_port = htons(neighbour_port);
 
             printf("%02d: Trying to connect to %02d with IPv6 in port %d\n", id, neighbours[i], neighbour_port);
 
             if (connect(sock6, (struct sockaddr *)&serv_addr6, sizeof(serv_addr6)) < 0) {
-                close(sock6);
+                close(sock6); /* In case it failed, we close the socket for IPv6 connection, and try to connect with IPv4 */
                 int sock = socket(AF_INET, SOCK_STREAM, 0); 
 
                 serv_addr.sin_port = htons(neighbour_port);
@@ -70,6 +72,7 @@ int connect_to_servers(int init_portnum, int n_needed, int n_neighbours, int nei
                 printf("%02d: Trying to connect to %02d with IPv4 in port %d\n", id, neighbours[i], neighbour_port);
                 
                 if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
+                    /* If it failed, it means that the neighbour isn't a server, so we move on */
                     close(sock);
                     continue;
                 } else {
@@ -92,6 +95,7 @@ int connect_to_servers(int init_portnum, int n_needed, int n_neighbours, int nei
             close(connected_socket);
             printf("%02d: Received %d from %02d\n", id, state_message.state, state_message.id);
             
+            /* We store the state of the connected neighbour */
             for (int j = 0; j < n_neighbours; j++){
                 if (neighbours[j] == state_message.id){
                     neighbours_state[j] = state_message.state;
@@ -120,9 +124,11 @@ int connect_to_master(int init_portnum, int id, int state){
 
     printf("%02d: Trying to connect to master\n", id);
     int connected = 0;
+    /* Giving that the master is always server, we should be able to reach it all the time */
     while (!connected){
+        /* Trying first with IPv6 */
         if (connect(sock6, (struct sockaddr *)&serv_addr6, sizeof(serv_addr6)) < 0){
-            close(sock6);
+            close(sock6); /* In case it failed, we close the socket for IPv6 connection, and try to connect with IPv4 */
             int sock = socket(AF_INET, SOCK_STREAM, 0); 
 
             serv_addr.sin_port = htons(init_portnum);
