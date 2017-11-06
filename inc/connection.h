@@ -4,9 +4,9 @@
 
 /* SERVER FUNCTIONS */
 
-int server_init(int portnum);
-int wait_for_clients(int server_fd, int n_needed, int n_neighbours, int neighbours[], int neighbours_state[], int id, int state);
-int wait_for_slaves(int server_fd, int dim, int slaves_state[]);
+int server_init(int portnum, int type);
+int wait_for_clients(int server_fd,int server_fd6, int n_needed, int n_neighbours, int neighbours[], int neighbours_state[], int id, int state);
+int wait_for_slaves(int server_fd,int server_fd6, int dim, int slaves_state[]);
 
 /* CLIENT FUNCTIONS */
 

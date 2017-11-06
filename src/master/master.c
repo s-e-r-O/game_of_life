@@ -23,7 +23,8 @@ int main(int argc, char **argv)
 	
 	int generation = 0;
 
-	int server_fd = server_init(portnum);
+	int server_fd = server_init(portnum, 4);
+	int server_fd6 = server_init(portnum, 6);
 
 	sleep(1);
 	
@@ -40,7 +41,7 @@ int main(int argc, char **argv)
 		wprintw(info, "Generation: %d", generation);
 		array_state_reset(dim*dim, slaves_state);
 		
-		wait_for_slaves(server_fd, dim, slaves_state);
+		wait_for_slaves(server_fd, server_fd6, dim, slaves_state);
 		
 
     	box(board, 0, 0);

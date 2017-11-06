@@ -23,6 +23,7 @@ int main(int argc, char **argv)
 	int neighbours_state[n_neighbours]; /* Stores the state of all neighbours */
 
 	int server_fd;
+	int server_fd6;
 
 	/* 
 		Tyṕe can be one of four:
@@ -40,7 +41,8 @@ int main(int argc, char **argv)
 
 	/* server_fd won't be needed at all on an ONLY_CLIENT slave */
 	if (type != ONLY_CLIENT){
-		server_fd = server_init(portnum);
+		server_fd = server_init(portnum, 4);
+		server_fd6 = server_init(portnum, 6);
 	}
 
 	/* Initial port number */
@@ -87,7 +89,7 @@ int main(int argc, char **argv)
 			case ONLY_SERVER:;
 				
 				/* Waiting for all neighbours */
-				wait_for_clients(server_fd, n_neighbours, n_neighbours, neighbours, neighbours_state, id,state);
+				wait_for_clients(server_fd, server_fd6, n_neighbours, n_neighbours, neighbours, neighbours_state, id,state);
 				
 			break;
 			
@@ -114,7 +116,7 @@ int main(int argc, char **argv)
 				*/
 
 				int total_clients = (n_neighbours + 1) / 2;
-				wait_for_clients(server_fd, total_clients, n_neighbours, neighbours, neighbours_state, id,state);
+				wait_for_clients(server_fd, server_fd6, total_clients, n_neighbours, neighbours, neighbours_state, id,state);
 
 				/* After switching from server to client, connecting to the remaining servers */
 				connect_to_servers(init_portnum, n_neighbours - total_clients, n_neighbours, neighbours, neighbours_state, id,state);
@@ -139,7 +141,7 @@ int main(int argc, char **argv)
 				connect_to_servers(init_portnum, total_servers, n_neighbours, neighbours, neighbours_state, id, state);
 
 				/* After switching from client to server, waiting for the remaining clients */
-				wait_for_clients(server_fd, n_neighbours - total_servers, n_neighbours, neighbours, neighbours_state, id, state);
+				wait_for_clients(server_fd, server_fd6, n_neighbours - total_servers, n_neighbours, neighbours, neighbours_state, id, state);
 
 			break;
 		}
