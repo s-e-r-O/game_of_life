@@ -107,8 +107,9 @@ int main(int argc , char *argv[])
         //add masters socket to set
         FD_SET(master_socket, &readfds);
         FD_SET(master_socket6, &readfds);
+       
         max_sd = master_socket6;
-         
+         /*
         //add child sockets to set
         for (int i = 0 ; i < max_clients ; i++) 
         {
@@ -123,7 +124,7 @@ int main(int argc , char *argv[])
             if(sd > max_sd)
                 max_sd = sd;
         }
-  
+  */
         //wait for an activity on one of the sockets , timeout is NULL , so wait indefinitely
         activity = select( max_sd + 1 , &readfds , NULL , NULL , NULL);
         //activity6 = select( max_sd + 1 , &readfds , NULL , NULL , NULL);

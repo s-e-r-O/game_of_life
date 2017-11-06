@@ -3,12 +3,22 @@
 #include <unistd.h>
 #include <curses.h>
 #include <locale.h>
+#include <signal.h>
 
 #include "connection.h"
 #include "master_utils.h"
 
+
+void master_shutdown(){
+
+	endwin();
+	exit(EXIT_SUCCESS);
+}
+
 int main(int argc, char **argv)
 {
+	signal(SIGINT, master_shutdown);
+
 	int portnum = 0;
 	int dim = 0;
 
@@ -22,21 +32,24 @@ int main(int argc, char **argv)
 	int generation = 0;
 
 	int server_fd = server_init(portnum);
+
+	sleep(1);
 	
 	setlocale(LC_ALL, "");
 
 	initscr();
 	WINDOW *board = newwin(dim + 2, dim + 2, (LINES- dim - 2) / 2, (COLS - dim - 2)/2);
 	WINDOW *info = newwin(1, COLS, 0, 0);
-	
+
 	while (1){
 		wclear(board);
 		wclear(info);
-		
+
 		wprintw(info, "Generation: %d", generation);
 		array_state_reset(dim*dim, slaves_state);
 		
 		wait_for_slaves(server_fd, dim, slaves_state);
+		
 
     	box(board, 0, 0);
 		
@@ -63,6 +76,5 @@ int main(int argc, char **argv)
 
 		//printf("M: New generation %d!\n", generation);
 	}
-	endwin();
-	exit(EXIT_SUCCESS);
+
 }

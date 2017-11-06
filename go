@@ -41,13 +41,13 @@ fi
 echo "Starting Game of Life Simulation"
 echo
 echo "Starting master: "
-x-terminal-emulator -e ./master -d $dim -p $portnum 
+x-terminal-emulator --hide-menubar -t MASTER -e "./exec/master -d $dim -p $portnum"
 
 echo
 echo "Starting slaves: "
 for i in `seq 1 $(($dim * $dim))` 
 do
-	./slave -i $i -d $dim -p $(($portnum + $i)) &
+	./exec/slave -i $i -d $dim -p $(($portnum + $i)) &
 done
 
 read -n 1 -s
