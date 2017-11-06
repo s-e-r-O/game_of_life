@@ -66,6 +66,7 @@ int wait_for_clients(int server_fd, int n_needed, int n_neighbours, int neighbou
         state_message.state = state;
 
         send(new_socket, &state_message, sizeof(state_message), 0);
+        close(new_socket);
     }
 }
 
@@ -86,6 +87,7 @@ int wait_for_slaves(int server_fd, int dim, int slaves_state[]){
         new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t*)&addrlen);
             
         read(new_socket, &state_message, sizeof(state_message));
+        close(new_socket);
 
         //printf("M: Connected to %02d\n", state_message.id);
         //printf("M: Received %d from %02d\n", state_message.state, state_message.id);

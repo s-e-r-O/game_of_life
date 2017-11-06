@@ -1,19 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <curses.h>
 #include <locale.h>
 #include <signal.h>
 
 #include "connection.h"
 #include "master_utils.h"
-
-
-void master_shutdown(){
-
-	endwin();
-	exit(EXIT_SUCCESS);
-}
 
 int main(int argc, char **argv)
 {

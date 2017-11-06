@@ -62,6 +62,7 @@ int connect_to_servers(int init_portnum, int n_needed, int n_neighbours, int nei
             printf("%02d: Trying to connect to %02d with IPv6 in port %d\n", id, neighbours[i], neighbour_port);
 
             if (connect(sock6, (struct sockaddr *)&serv_addr6, sizeof(serv_addr6)) < 0) {
+                close(sock6);
                 int sock = socket(AF_INET, SOCK_STREAM, 0); 
 
                 serv_addr.sin_port = htons(neighbour_port);
@@ -69,6 +70,7 @@ int connect_to_servers(int init_portnum, int n_needed, int n_neighbours, int nei
                 printf("%02d: Trying to connect to %02d with IPv4 in port %d\n", id, neighbours[i], neighbour_port);
                 
                 if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
+                    close(sock);
                     continue;
                 } else {
                     connected_socket = sock;
@@ -87,6 +89,7 @@ int connect_to_servers(int init_portnum, int n_needed, int n_neighbours, int nei
             send(connected_socket, &state_message, sizeof(state_message), 0);
             read(connected_socket, &state_message, sizeof(state_message));
 
+            close(connected_socket);
             printf("%02d: Received %d from %02d\n", id, state_message.state, state_message.id);
             
             for (int j = 0; j < n_neighbours; j++){
@@ -119,6 +122,7 @@ int connect_to_master(int init_portnum, int id, int state){
     int connected = 0;
     while (!connected){
         if (connect(sock6, (struct sockaddr *)&serv_addr6, sizeof(serv_addr6)) < 0){
+            close(sock6);
             int sock = socket(AF_INET, SOCK_STREAM, 0); 
 
             serv_addr.sin_port = htons(init_portnum);
@@ -126,6 +130,8 @@ int connect_to_master(int init_portnum, int id, int state){
             if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) >= 0){
                 connected_socket = sock;
                 connected = 1;
+            } else {
+                close(sock);
             }
         } else {
             connected_socket = sock6;
@@ -139,5 +145,7 @@ int connect_to_master(int init_portnum, int id, int state){
     state_message.id = id;
     state_message.state = state;
     
-    send(connected_socket, &state_message, sizeof(state_message), 0);   
+    send(connected_socket, &state_message, sizeof(state_message), 0); 
+
+    close(connected_socket);  
 }

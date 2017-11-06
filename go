@@ -1,25 +1,31 @@
 #!/bin/bash
 
 function usage {
-	echo "Usage: $0 -d dim -p startPortNumber"
+	echo "Usage: $0 -d dim -p startPortNumber [-v]"
 	echo "       Arguments are mandatory."
 	echo "        * dim indicates the matrix dimension (4 < dim < 21)."
 	echo "        * startPortNumber must be greater than 1024."
+  echo "        * -v shows the connection log of all slaves."
     exit 1
 }
 
-if [ $# -ne 4 ]
+if [ $# -lt 4 ]
 then
     usage
 fi
 
-while getopts ":d:p:" opt; do
+
+log=false
+while getopts ":d:p:v" opt; do
   case $opt in
     d)
       dim=${OPTARG}
       ;;
     p)
       portnum=${OPTARG}
+      ;;
+    v)
+      log=true
       ;;
     \?)
       echo "Invalid option: -$OPTARG"
@@ -45,9 +51,21 @@ x-terminal-emulator --hide-menubar -t MASTER -e "./exec/master -d $dim -p $portn
 
 echo
 echo "Starting slaves: "
+
+echo "Press any key to stop..."
+
 for i in `seq 1 $(($dim * $dim))` 
 do
-	./exec/slave -i $i -d $dim -p $(($portnum + $i)) &
+  if $log
+  then
+	 ./exec/slave -i $i -d $dim -p $(($portnum + $i)) &
+  else
+   ./exec/slave -i $i -d $dim -p $(($portnum + $i)) > /dev/null & 
+  fi
 done
 
+ 
 read -n 1 -s
+
+killall -9 master
+killall -9 slave

@@ -40,3 +40,9 @@ void get_args(int argc, char **argv, int *dim, int *portnum){
 		usage(argv[0]);
 	}
 }
+
+void master_shutdown(){
+
+	endwin();
+	exit(EXIT_SUCCESS);
+}
