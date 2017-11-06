@@ -35,39 +35,15 @@ int main(int argc, char **argv)
 	WINDOW *info = newwin(1, COLS, 0, 0);
 
 	while (1){
-		wclear(board);
-		wclear(info);
-
-		wprintw(info, "Generation: %d", generation);
+		
 		array_state_reset(dim*dim, slaves_state);
 		
 		wait_for_slaves(server_fd, server_fd6, dim, slaves_state);
 		
+		show_slaves(board, dim, slaves_state);
+		show_generation(info, generation);
 
-    	box(board, 0, 0);
-		
-		for (int i = 0; i < dim; i++){
-			for (int j = 0; j < dim; j++){
-				switch(slaves_state[i * dim + j]){
-					case ALIVE:
-						mvwaddch(board, i + 1, j + 1, ACS_CKBOARD);
-					break;
-					case DEAD:
-						mvwaddch(board, i + 1, j + 1, ' ');
-					break;
-					case NOT_SET:
-						mvwaddch(board, i + 1, j + 1, ACS_BULLET);
-						break;
-				}
-			}
-			
-		}
-		wrefresh(board);
-		wrefresh(info);
-		
 		generation++;
-
-		//printf("M: New generation %d!\n", generation);
 	}
 
 }

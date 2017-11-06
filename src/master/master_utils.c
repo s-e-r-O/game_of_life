@@ -4,6 +4,9 @@
 
 #include "master_utils.h"
 
+/* Used only to get those states */
+#include "connection.h"
+
 void usage(char *name) {
 	printf ("Usage: %s -d dim -p portnumber\n", name);
 	printf ("       Argument is mandatory.\n");
@@ -45,4 +48,36 @@ void master_shutdown(){
 
 	endwin();
 	exit(EXIT_SUCCESS);
+}
+
+void show_generation(WINDOW *win, int gen){
+	wclear(win);
+
+	wprintw(win, "Generation: %d", gen);
+
+	wrefresh(win);
+}
+
+void show_slaves(WINDOW *win, int dim, int states[]){
+
+	wclear(win);
+
+	box(win, 0, 0);
+	for (int i = 0; i < dim; i++){
+		for (int j = 0; j < dim; j++){
+			switch(states[i * dim + j]){
+				case ALIVE:
+					mvwaddch(win, i + 1, j + 1, ACS_CKBOARD);
+				break;
+				case DEAD:
+					mvwaddch(win, i + 1, j + 1, ' ');
+				break;
+				case NOT_SET:
+					mvwaddch(win, i + 1, j + 1, ACS_BULLET);
+				break;
+				}
+			}		
+		}
+
+	wrefresh(win);
 }
